@@ -1,0 +1,536 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caderno de Poesia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Spectral+SC:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4ecdd;
+    --paper-2:#efe6d4;
+    --card:#fbf6ea;
+    --ink:#2a2620;
+    --ink-soft:#5c554a;
+    --ink-faint:#8a8170;
+    --oxblood:#7c3326;
+    --oxblood-soft:#a65a48;
+    --gold:#9a7b41;
+    --line:#d8cdb6;
+    --line-soft:#e4dac6;
+    --shadow:rgba(60,46,28,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(154,123,65,.05), transparent 60%),
+      radial-gradient(circle at 82% 88%, rgba(124,51,38,.05), transparent 55%);
+    color:var(--ink);
+    font-family:"Spectral",Georgia,serif;
+    font-weight:400;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  /* faint paper grain */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:38px 26px 80px}
+
+  /* ---------- header ---------- */
+  header{text-align:center;margin-bottom:30px}
+  .kicker{font-family:"Spectral SC","Spectral",serif;letter-spacing:.32em;text-transform:uppercase;
+    font-size:11px;color:var(--oxblood);margin-bottom:8px}
+  h1{font-family:"Cormorant Garamond",serif;font-weight:500;font-size:clamp(40px,7vw,68px);
+    line-height:.98;margin:0;color:var(--ink)}
+  h1 .amp{color:var(--gold);font-style:italic;font-weight:400}
+  .sub{font-style:italic;color:var(--ink-soft);font-size:17px;margin-top:10px}
+  .rule{width:64px;height:1px;background:var(--gold);margin:18px auto 0;position:relative}
+  .rule::before,.rule::after{content:"";position:absolute;top:50%;width:4px;height:4px;border-radius:50%;
+    background:var(--gold);transform:translateY(-50%)}
+  .rule::before{left:-12px}.rule::after{right:-12px}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+    margin:26px 0 8px}
+  .search{flex:1 1 240px;max-width:360px;position:relative}
+  .search input{width:100%;background:var(--card);border:1px solid var(--line);border-radius:2px;
+    padding:9px 12px 9px 32px;font-family:"Spectral",serif;font-size:15px;color:var(--ink)}
+  .search input:focus{outline:none;border-color:var(--oxblood-soft)}
+  .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5}
+  select{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:9px 10px;
+    font-family:"Spectral",serif;font-size:14px;color:var(--ink);cursor:pointer}
+  select:focus{outline:none;border-color:var(--oxblood-soft)}
+  .btn{font-family:"Spectral SC","Spectral",serif;letter-spacing:.06em;font-size:13px;
+    border:1px solid var(--ink);background:transparent;color:var(--ink);padding:9px 16px;border-radius:2px;
+    cursor:pointer;transition:.18s}
+  .btn:hover{background:var(--ink);color:var(--paper)}
+  .btn-primary{background:var(--oxblood);border-color:var(--oxblood);color:#fbf6ea}
+  .btn-primary:hover{background:#67271c;border-color:#67271c;color:#fff}
+  .btn-ghost{border-color:var(--line);color:var(--ink-soft)}
+  .btn-ghost:hover{background:var(--paper-2);color:var(--ink);border-color:var(--ink-faint)}
+
+  .meta-row{display:flex;justify-content:center;gap:18px;align-items:center;color:var(--ink-faint);
+    font-size:13px;margin-bottom:24px;flex-wrap:wrap}
+  .meta-row b{color:var(--oxblood);font-weight:600}
+  .link{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-family:"Spectral",serif;
+    font-size:13px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+  .link:hover{color:var(--oxblood)}
+
+  /* ---------- index panel ---------- */
+  .index-panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:3px;
+    padding:22px 26px;margin-bottom:26px;box-shadow:0 1px 0 var(--line-soft)}
+  .index-panel.open{display:block}
+  .index-panel h3{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:24px;margin:0 0 4px;
+    color:var(--ink)}
+  .index-panel .ip-sub{font-style:italic;color:var(--ink-soft);font-size:14px;margin-bottom:16px}
+  .ip-cols{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  @media(max-width:620px){.ip-cols{grid-template-columns:1fr}}
+  .ip-col h4{font-family:"Spectral SC","Spectral",serif;letter-spacing:.16em;text-transform:uppercase;
+    font-size:11px;color:var(--oxblood);border-bottom:1px solid var(--line);padding-bottom:6px;margin:0 0 10px}
+  .ip-item{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;cursor:pointer;
+    border-bottom:1px dotted var(--line-soft)}
+  .ip-item:hover .ip-name{color:var(--oxblood)}
+  .ip-name{font-size:15px}
+  .ip-count{font-family:"Spectral",serif;font-size:12px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  .ip-empty{color:var(--ink-faint);font-style:italic;font-size:14px}
+
+  /* ---------- grid ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+  .poem-card{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:20px 22px;
+    cursor:pointer;position:relative;transition:.2s;box-shadow:0 1px 2px transparent}
+  .poem-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px -10px var(--shadow);border-color:var(--ink-faint)}
+  .impression{position:absolute;top:16px;right:18px;color:var(--gold);font-size:13px;letter-spacing:2px}
+  .pc-title{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:25px;line-height:1.08;
+    margin:0 8px 4px 0;color:var(--ink);max-width:88%}
+  .pc-author{font-style:italic;color:var(--oxblood);font-size:15px;margin-bottom:12px}
+  .pc-author .yr{color:var(--ink-faint);font-style:normal}
+  .pc-snippet{font-size:14.5px;color:var(--ink-soft);line-height:1.5;white-space:pre-line;
+    max-height:84px;overflow:hidden;position:relative;margin-bottom:14px;
+    -webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
+  .pc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;
+    border-top:1px solid var(--line-soft);padding-top:10px}
+  .tag{font-family:"Spectral SC","Spectral",serif;letter-spacing:.08em;text-transform:uppercase;font-size:10px;
+    color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line);border-radius:2px;padding:2px 8px}
+  .pc-date{font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .empty-state{text-align:center;padding:70px 20px;color:var(--ink-faint)}
+  .empty-state .es-mark{font-family:"Cormorant Garamond",serif;font-size:60px;color:var(--line);line-height:1}
+  .empty-state p{font-style:italic;font-size:17px;margin:14px 0 22px}
+
+  /* ---------- modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(40,30,18,.46);backdrop-filter:blur(2px);
+    display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow-y:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--paper);border:1px solid var(--line);border-radius:4px;max-width:680px;width:100%;
+    padding:38px 44px 34px;box-shadow:0 30px 70px -20px rgba(40,30,18,.5);position:relative;
+    animation:rise .3s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @media(max-width:560px){.modal{padding:28px 22px}}
+  .close{position:absolute;top:16px;right:18px;background:none;border:none;font-size:26px;line-height:1;
+    color:var(--ink-faint);cursor:pointer;font-family:Georgia,serif}
+  .close:hover{color:var(--oxblood)}
+
+  /* detail view */
+  .d-kicker{font-family:"Spectral SC","Spectral",serif;letter-spacing:.2em;text-transform:uppercase;
+    font-size:10px;color:var(--oxblood);margin-bottom:8px}
+  .d-title{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:38px;line-height:1.02;
+    margin:0 0 6px;color:var(--ink)}
+  .d-author{font-style:italic;font-size:18px;color:var(--oxblood);margin-bottom:2px}
+  .d-line{font-size:13px;color:var(--ink-faint);margin-bottom:22px}
+  .d-text{font-size:18px;line-height:1.62;white-space:pre-wrap;color:var(--ink);
+    border-left:2px solid var(--gold);padding:4px 0 4px 22px;margin:0 0 24px;font-weight:400}
+  .d-orig{font-size:15px;line-height:1.55;white-space:pre-wrap;color:var(--ink-soft);font-style:italic;
+    border-left:1px solid var(--line);padding-left:18px;margin:0 0 24px}
+  .d-section{margin-bottom:18px}
+  .d-section h5{font-family:"Spectral SC","Spectral",serif;letter-spacing:.16em;text-transform:uppercase;
+    font-size:10px;color:var(--oxblood);margin:0 0 6px}
+  .d-section p{margin:0;font-size:15.5px;color:var(--ink);line-height:1.55}
+  .d-section .commentary{font-style:italic;color:var(--ink-soft);white-space:pre-wrap}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-family:"Spectral SC","Spectral",serif;letter-spacing:.06em;font-size:11px;text-transform:uppercase;
+    background:var(--paper-2);border:1px solid var(--line);border-radius:2px;padding:3px 9px;color:var(--ink-soft)}
+  .chip.act{background:#f0e3d3;border-color:#e0cdb4;color:var(--oxblood)}
+  .d-actions{display:flex;gap:10px;margin-top:26px;border-top:1px solid var(--line);padding-top:18px}
+
+  /* form */
+  .form-title{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:30px;margin:0 0 4px}
+  .form-sub{font-style:italic;color:var(--ink-soft);font-size:14px;margin-bottom:22px}
+  .field{margin-bottom:15px}
+  .field label{display:block;font-family:"Spectral SC","Spectral",serif;letter-spacing:.1em;
+    text-transform:uppercase;font-size:10px;color:var(--oxblood);margin-bottom:5px}
+  .field input,.field textarea,.field select{width:100%;background:var(--card);border:1px solid var(--line);
+    border-radius:2px;padding:9px 11px;font-family:"Spectral",serif;font-size:15px;color:var(--ink)}
+  .field textarea{resize:vertical;line-height:1.5}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--oxblood-soft)}
+  .field .hint{font-size:12px;color:var(--ink-faint);font-style:italic;margin-top:3px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:520px){.row2,.row3{grid-template-columns:1fr}}
+  .imp-pick{display:flex;gap:6px}
+  .imp-pick button{flex:1;background:var(--card);border:1px solid var(--line);border-radius:2px;
+    padding:8px;cursor:pointer;color:var(--ink-faint);font-family:"Spectral",serif;font-size:13px}
+  .imp-pick button.on{background:var(--gold);border-color:var(--gold);color:#fff}
+  .act-pick{display:flex;flex-wrap:wrap;gap:7px}
+  .act-pick button{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:6px 11px;
+    cursor:pointer;font-family:"Spectral",serif;font-size:13px;color:var(--ink-soft)}
+  .act-pick button.on{background:#f0e3d3;border-color:var(--oxblood-soft);color:var(--oxblood)}
+  .form-foot{display:flex;justify-content:space-between;gap:10px;margin-top:24px;
+    border-top:1px solid var(--line);padding-top:18px}
+
+  .io-text{width:100%;min-height:180px;background:var(--card);border:1px solid var(--line);border-radius:2px;
+    padding:12px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;color:var(--ink);line-height:1.5}
+  .io-note{font-size:13px;color:var(--ink-soft);font-style:italic;margin-bottom:14px;line-height:1.5}
+  .io-status{font-size:13px;margin-top:10px;min-height:18px}
+  .io-status.ok{color:#3d6b3d}.io-status.err{color:var(--oxblood)}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);
+    color:var(--paper);padding:11px 22px;border-radius:3px;font-size:14px;opacity:0;transition:.3s;z-index:99;
+    box-shadow:0 10px 30px -8px rgba(0,0,0,.4)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">Acervo do Percurso</div>
+    <h1>Caderno <span class="amp">de</span> Poesia</h1>
+    <div class="sub">os poemas que ficaram &mdash; e o que ficou deles</div>
+    <div class="rule"></div>
+  </header>
+
+  <div class="toolbar">
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="text" placeholder="Buscar por verso, autor, tema&hellip;">
+    </div>
+    <select id="filterMov"><option value="">Todos os movimentos</option></select>
+    <select id="sortBy">
+      <option value="dateRead-desc">Lidos por &uacute;ltimo</option>
+      <option value="dateRead-asc">Lidos primeiro</option>
+      <option value="year-asc">Cronologia do poema &uarr;</option>
+      <option value="year-desc">Cronologia do poema &darr;</option>
+      <option value="author-asc">Autor (A&ndash;Z)</option>
+      <option value="impression-desc">Maior impress&atilde;o</option>
+    </select>
+    <button class="btn btn-primary" id="btnNew">+ Novo poema</button>
+  </div>
+
+  <div class="meta-row">
+    <span><b id="count">0</b> poemas no caderno</span>
+    <button class="link" id="btnIndex">&#9671; ver &iacute;ndice do percurso</button>
+    <button class="link" id="btnImport">importar</button>
+    <button class="link" id="btnExport">exportar</button>
+  </div>
+
+  <div class="index-panel" id="indexPanel">
+    <h3>&Iacute;ndice do percurso</h3>
+    <div class="ip-sub">A hist&oacute;ria liter&aacute;ria que emerge da leitura &mdash; n&atilde;o um programa, um mapa que cresce sozinho.</div>
+    <div class="ip-cols">
+      <div class="ip-col"><h4>Movimentos &amp; estilos</h4><div id="ipMov"></div></div>
+      <div class="ip-col"><h4>Autores</h4><div id="ipAuth"></div></div>
+    </div>
+  </div>
+
+  <div id="gridHost"></div>
+</div>
+
+<!-- detail / form overlay -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY="caderno-poemas:v1";
+const ACTIONS=["pesquisei","decorei","gravei","ouvi","comparei tradu\u00e7\u00f5es","li o par"];
+let poems=[];
+
+/* ---------- persistence ---------- */
+async function load(){
+  try{
+    const r=await window.storage.get(KEY,false);
+    poems = r&&r.value ? JSON.parse(r.value) : [];
+  }catch(e){ poems=[]; }
+  render();
+}
+async function save(){
+  try{ await window.storage.set(KEY,JSON.stringify(poems),false); }
+  catch(e){ toast("N\u00e3o consegui salvar \u2014 exporte um backup."); }
+}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function impMarks(n){n=+n||0;return "\u25C6".repeat(n)+"\u25C7".repeat(Math.max(0,3-n));}
+function fmtDate(d){if(!d)return"";const p=d.split("-");return p.length===3?`${p[2]}.${p[1]}.${p[0]}`:d;}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600);}
+
+/* ---------- render grid ---------- */
+function currentList(){
+  const q=$("#q").value.trim().toLowerCase();
+  const mov=$("#filterMov").value;
+  let list=poems.filter(p=>{
+    if(mov && p.movement!==mov)return false;
+    if(!q)return true;
+    return [p.title,p.author,p.text,p.commentary,p.movement,p.filiations,(p.tags||[]).join(" ")]
+      .join(" ").toLowerCase().includes(q);
+  });
+  const [k,dir]=$("#sortBy").value.split("-");
+  list.sort((a,b)=>{
+    let av=a[k]||"",bv=b[k]||"";
+    if(k==="impression"){av=+av||0;bv=+bv||0;}
+    if(av<bv)return dir==="asc"?-1:1;
+    if(av>bv)return dir==="asc"?1:-1;
+    return 0;
+  });
+  return list;
+}
+function render(){
+  $("#count").textContent=poems.length;
+  // movements filter + index
+  const movs={},auths={};
+  poems.forEach(p=>{if(p.movement)movs[p.movement]=(movs[p.movement]||0)+1;
+    if(p.author)auths[p.author]=(auths[p.author]||0)+1;});
+  const fm=$("#filterMov"),cur=fm.value;
+  fm.innerHTML='<option value="">Todos os movimentos</option>'+
+    Object.keys(movs).sort().map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join("");
+  fm.value=cur;
+  renderIndex(movs,auths);
+
+  const list=currentList();
+  const host=$("#gridHost");
+  if(poems.length===0){
+    host.innerHTML=`<div class="empty-state"><div class="es-mark">&para;</div>
+      <p>O caderno ainda est&aacute; em branco.<br>O primeiro poema que o capturar mora aqui.</p>
+      <button class="btn btn-primary" onclick="openForm()">Registrar o primeiro poema</button></div>`;
+    return;
+  }
+  if(list.length===0){host.innerHTML=`<div class="empty-state"><p>Nenhum poema corresponde &agrave; busca.</p></div>`;return;}
+  host.innerHTML='<div class="grid">'+list.map(p=>{
+    const snip=(p.text||"").split("\n").slice(0,5).join("\n");
+    return `<div class="poem-card" onclick="openDetail('${p.id}')">
+      <div class="impression" title="${(+p.impression||0)} de 3">${impMarks(p.impression)}</div>
+      <div class="pc-title">${esc(p.title)||"<em>sem t&iacute;tulo</em>"}</div>
+      <div class="pc-author">${esc(p.author)||"an&ocirc;nimo"}${p.year?` <span class="yr">&middot; ${esc(p.year)}</span>`:""}</div>
+      <div class="pc-snippet">${esc(snip)}</div>
+      <div class="pc-foot">
+        ${p.movement?`<span class="tag">${esc(p.movement)}</span>`:'<span></span>'}
+        ${p.dateRead?`<span class="pc-date">lido ${fmtDate(p.dateRead)}</span>`:''}
+      </div></div>`;
+  }).join("")+'</div>';
+}
+function renderIndex(movs,auths){
+  const mk=obj=>{const ks=Object.keys(obj).sort((a,b)=>obj[b]-obj[a]||a.localeCompare(b));
+    if(!ks.length)return '<div class="ip-empty">ainda vazio</div>';
+    return ks.map(k=>`<div class="ip-item" onclick="filterByMov('${esc(k).replace(/'/g,"")}')">
+      <span class="ip-name">${esc(k)}</span><span class="ip-count">${obj[k]}</span></div>`).join("");};
+  $("#ipMov").innerHTML=mk(movs);
+  $("#ipAuth").innerHTML=Object.keys(auths).sort((a,b)=>auths[b]-auths[a]||a.localeCompare(b))
+    .map(k=>`<div class="ip-item" onclick="searchFor('${esc(k).replace(/'/g,"")}')">
+      <span class="ip-name">${esc(k)}</span><span class="ip-count">${auths[k]}</span></div>`).join("")||'<div class="ip-empty">ainda vazio</div>';
+}
+function filterByMov(m){$("#filterMov").value=m;render();$("#indexPanel").classList.remove("open");window.scrollTo({top:240,behavior:"smooth"});}
+function searchFor(t){$("#q").value=t;render();$("#indexPanel").classList.remove("open");window.scrollTo({top:240,behavior:"smooth"});}
+
+/* ---------- detail ---------- */
+function openDetail(id){
+  const p=poems.find(x=>x.id===id);if(!p)return;
+  const sec=(label,val,cls="")=>val?`<div class="d-section"><h5>${label}</h5><p class="${cls}">${esc(val)}</p></div>`:"";
+  const acts=(p.actions||[]).length?`<div class="d-section"><h5>A&ccedil;&otilde;es tomadas</h5>
+    <div class="chips">${p.actions.map(a=>`<span class="chip act">${esc(a)}</span>`).join("")}</div></div>`:"";
+  const tags=(p.tags||[]).length?`<div class="d-section"><h5>Tags</h5>
+    <div class="chips">${p.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div></div>`:"";
+  const line=[p.year,p.movement,p.origLang&&`do ${esc(p.origLang)}`,p.translator&&`trad. ${esc(p.translator)}`,
+    p.dateRead&&`lido em ${fmtDate(p.dateRead)}`].filter(Boolean).join("  &middot;  ");
+  $("#modal").innerHTML=`<button class="close" onclick="closeOverlay()">&times;</button>
+    <div class="d-kicker">${impMarks(p.impression)}</div>
+    <div class="d-title">${esc(p.title)||"sem t&iacute;tulo"}</div>
+    <div class="d-author">${esc(p.author)||"an&ocirc;nimo"}</div>
+    <div class="d-line">${line}</div>
+    <div class="d-text">${esc(p.text)}</div>
+    ${p.original?`<div class="d-section"><h5>Original</h5><div class="d-orig">${esc(p.original)}</div></div>`:""}
+    ${p.commentary?`<div class="d-section"><h5>Coment&aacute;rio</h5><p class="commentary">${esc(p.commentary)}</p></div>`:""}
+    ${p.filiations?`<div class="d-section"><h5>Filia&ccedil;&otilde;es &mdash; de quem herda, com quem dialoga</h5><p>${esc(p.filiations)}</p></div>`:""}
+    ${acts}${tags}
+    <div class="d-actions">
+      <button class="btn btn-ghost" onclick="openForm('${p.id}')">Editar</button>
+      <button class="btn btn-ghost" onclick="del('${p.id}')">Remover</button>
+    </div>`;
+  openOverlay();
+}
+function del(id){
+  if(!confirm("Remover este poema do caderno?"))return;
+  poems=poems.filter(x=>x.id!==id);save();render();closeOverlay();toast("Poema removido.");
+}
+
+/* ---------- form ---------- */
+let formActs=[],formImp=0;
+function openForm(id){
+  const p=id?poems.find(x=>x.id===id):{};
+  formActs=[...(p.actions||[])];formImp=+p.impression||0;
+  $("#modal").innerHTML=`<button class="close" onclick="closeOverlay()">&times;</button>
+    <div class="form-title">${id?"Editar poema":"Novo poema"}</div>
+    <div class="form-sub">${id?"Ajuste o registro do caderno.":"O que este poema deixou em voc&ecirc;."}</div>
+    <input type="hidden" id="f_id" value="${id||""}">
+    <div class="field"><label>T&iacute;tulo</label><input id="f_title" value="${esc(p.title)}"></div>
+    <div class="row2">
+      <div class="field"><label>Autor</label><input id="f_author" value="${esc(p.author)}"></div>
+      <div class="field"><label>Ano / d&eacute;cada do poema</label><input id="f_year" value="${esc(p.year)}" placeholder="ex.: 1945"></div>
+    </div>
+    <div class="field"><label>Poema</label><textarea id="f_text" rows="8" placeholder="Cole o poema, preservando as quebras de verso&hellip;">${esc(p.text)}</textarea></div>
+    <div class="row3">
+      <div class="field"><label>Movimento / estilo</label><input id="f_movement" value="${esc(p.movement)}" placeholder="ex.: Modernismo"></div>
+      <div class="field"><label>L&iacute;ngua original</label><input id="f_origLang" value="${esc(p.origLang)}" placeholder="vazio se PT"></div>
+      <div class="field"><label>Tradutor</label><input id="f_translator" value="${esc(p.translator)}"></div>
+    </div>
+    <div class="field" id="origWrap" style="${p.origLang||p.original?'':'display:none'}">
+      <label>Texto original (opcional)</label>
+      <textarea id="f_original" rows="4" placeholder="O poema na l&iacute;ngua de origem, ao lado da tradu&ccedil;&atilde;o&hellip;">${esc(p.original)}</textarea>
+    </div>
+    <div class="field"><label>Coment&aacute;rio (opcional)</label>
+      <textarea id="f_commentary" rows="3" placeholder="O que voc&ecirc; pensou, sentiu, percebeu&hellip;">${esc(p.commentary)}</textarea></div>
+    <div class="field"><label>Filia&ccedil;&otilde;es &mdash; a genealogia</label>
+      <input id="f_filiations" value="${esc(p.filiations)}" placeholder="de quem herda &middot; com quem dialoga &middot; quem o cita">
+      <div class="hint">&Eacute; daqui que a hist&oacute;ria liter&aacute;ria vai se desenhando.</div></div>
+    <div class="row2">
+      <div class="field"><label>Impress&atilde;o</label>
+        <div class="imp-pick" id="impPick">
+          ${[1,2,3].map(n=>`<button type="button" data-n="${n}" onclick="pickImp(${n})">${impMarks(n)}</button>`).join("")}
+        </div></div>
+      <div class="field"><label>Lido em</label><input id="f_dateRead" type="date" value="${esc(p.dateRead)||new Date().toISOString().slice(0,10)}"></div>
+    </div>
+    <div class="field"><label>A&ccedil;&otilde;es tomadas</label>
+      <div class="act-pick" id="actPick">
+        ${ACTIONS.map(a=>`<button type="button" data-a="${a}" onclick="toggleAct('${a}')">${a}</button>`).join("")}
+      </div></div>
+    <div class="field"><label>Tags (separadas por v&iacute;rgula)</label>
+      <input id="f_tags" value="${esc((p.tags||[]).join(", "))}" placeholder="tema, forma, motivo&hellip;"></div>
+    <div class="form-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveForm()">${id?"Salvar altera&ccedil;&otilde;es":"Guardar no caderno"}</button>
+    </div>`;
+  // toggle original textarea on origLang input
+  $("#f_origLang").addEventListener("input",e=>{$("#origWrap").style.display=e.target.value?"block":($("#f_original").value?"block":"none");});
+  syncImp();syncActs();
+  openOverlay();
+}
+function pickImp(n){formImp=(formImp===n?0:n);syncImp();}
+function syncImp(){document.querySelectorAll("#impPick button").forEach(b=>b.classList.toggle("on",+b.dataset.n<=formImp&&formImp>0));}
+function toggleAct(a){formActs.includes(a)?formActs=formActs.filter(x=>x!==a):formActs.push(a);syncActs();}
+function syncActs(){document.querySelectorAll("#actPick button").forEach(b=>b.classList.toggle("on",formActs.includes(b.dataset.a)));}
+function val(id){return $("#"+id).value.trim();}
+function saveForm(){
+  if(!val("f_text")&&!val("f_title")){toast("Falta ao menos o poema ou o t\u00edtulo.");return;}
+  const id=$("#f_id").value;
+  const rec={
+    id:id||uid(),
+    title:val("f_title"),author:val("f_author"),year:val("f_year"),
+    text:$("#f_text").value.replace(/\s+$/,""),original:$("#f_original").value.replace(/\s+$/,""),
+    movement:val("f_movement"),origLang:val("f_origLang"),translator:val("f_translator"),
+    commentary:$("#f_commentary").value.trim(),filiations:val("f_filiations"),
+    impression:formImp,dateRead:val("f_dateRead"),actions:[...formActs],
+    tags:val("f_tags").split(",").map(t=>t.trim()).filter(Boolean)
+  };
+  if(id){poems=poems.map(p=>p.id===id?rec:p);}else{poems.unshift(rec);}
+  save();render();closeOverlay();toast(id?"Registro atualizado.":"Poema guardado no caderno.");
+}
+
+/* ---------- import / export ---------- */
+function openImport(){
+  $("#modal").innerHTML=`<button class="close" onclick="closeOverlay()">&times;</button>
+    <div class="form-title">Importar</div>
+    <div class="io-note">Cole o registro em JSON gerado no seu percurso (um poema, ou uma lista deles).
+      Os poemas s&atilde;o adicionados ao caderno; backups exportados restauram tudo.</div>
+    <textarea class="io-text" id="ioIn" placeholder='{ "title": "...", "author": "...", "text": "..." }'></textarea>
+    <div class="io-status" id="ioStatus"></div>
+    <div class="form-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay()">Cancelar</button>
+      <button class="btn btn-primary" onclick="doImport()">Importar</button>
+    </div>`;
+  openOverlay();
+}
+function doImport(){
+  const raw=$("#ioIn").value.trim();const st=$("#ioStatus");
+  if(!raw){st.className="io-status err";st.textContent="Cole algo primeiro.";return;}
+  let data;try{data=JSON.parse(raw);}catch(e){st.className="io-status err";st.textContent="JSON inv\u00e1lido: "+e.message;return;}
+  const arr=Array.isArray(data)?data:[data];let n=0;
+  arr.forEach(d=>{
+    if(!d||(typeof d!=="object"))return;
+    poems.unshift({
+      id:d.id||uid(),title:d.title||"",author:d.author||"",year:d.year||"",
+      text:d.text||"",original:d.original||"",movement:d.movement||"",
+      origLang:d.origLang||"",translator:d.translator||"",commentary:d.commentary||"",
+      filiations:d.filiations||"",impression:+d.impression||0,
+      dateRead:d.dateRead||new Date().toISOString().slice(0,10),
+      actions:Array.isArray(d.actions)?d.actions:[],tags:Array.isArray(d.tags)?d.tags:[]
+    });n++;
+  });
+  save();render();closeOverlay();toast(n+(n===1?" poema importado.":" poemas importados."));
+}
+function openExport(){
+  $("#modal").innerHTML=`<button class="close" onclick="closeOverlay()">&times;</button>
+    <div class="form-title">Exportar</div>
+    <div class="io-note">Leve seu caderno com voc&ecirc;. O <b>backup JSON</b> restaura tudo aqui depois;
+      a <b>antologia HTML</b> &eacute; um arquivo aut&ocirc;nomo, leg&iacute;vel e imprim&iacute;vel, para guardar fora daqui.</div>
+    <div class="form-foot" style="border:none;justify-content:flex-start;flex-wrap:wrap;margin-top:6px">
+      <button class="btn btn-primary" onclick="exportJSON()">Backup JSON</button>
+      <button class="btn" onclick="exportHTML()">Antologia HTML</button>
+      <button class="btn btn-ghost" onclick="copyJSON()">Copiar JSON</button>
+    </div>`;
+  openOverlay();
+}
+function download(name,content,type){
+  const b=new Blob([content],{type});const u=URL.createObjectURL(b);
+  const a=document.createElement("a");a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);
+}
+function exportJSON(){download("caderno-poesia-backup.json",JSON.stringify(poems,null,2),"application/json");toast("Backup baixado.");}
+function copyJSON(){navigator.clipboard.writeText(JSON.stringify(poems,null,2)).then(()=>toast("JSON copiado."));}
+function exportHTML(){
+  const items=currentListAll().map(p=>`
+    <article>
+      <div class="mk">${impMarks(p.impression)}</div>
+      <h2>${esc(p.title)||"sem t\u00edtulo"}</h2>
+      <div class="au">${esc(p.author)}${p.year?" &middot; "+esc(p.year):""}${p.movement?" &middot; "+esc(p.movement):""}</div>
+      <pre class="tx">${esc(p.text)}</pre>
+      ${p.commentary?`<p class="cm">${esc(p.commentary)}</p>`:""}
+      ${p.filiations?`<p class="fi"><em>Filia&ccedil;&otilde;es:</em> ${esc(p.filiations)}</p>`:""}
+    </article>`).join("");
+  const doc=`<!doctype html><meta charset="utf-8"><title>Caderno de Poesia</title>
+  <style>body{font-family:Georgia,serif;max-width:680px;margin:40px auto;padding:0 20px;color:#2a2620;background:#f4ecdd;line-height:1.6}
+  h1{font-size:44px;text-align:center;font-weight:500}.sub{text-align:center;font-style:italic;color:#5c554a;margin-bottom:50px}
+  article{margin:0 0 54px;padding-bottom:30px;border-bottom:1px solid #d8cdb6}.mk{color:#9a7b41;letter-spacing:2px}
+  h2{font-size:30px;margin:6px 0 2px}.au{font-style:italic;color:#7c3326;margin-bottom:16px}
+  .tx{font-family:Georgia,serif;font-size:18px;white-space:pre-wrap;border-left:2px solid #9a7b41;padding-left:20px;margin:0 0 18px}
+  .cm{font-style:italic;color:#5c554a}.fi{font-size:14px;color:#8a8170}</style>
+  <h1>Caderno de Poesia</h1><div class="sub">os poemas que ficaram &mdash; ${poems.length} registros</div>${items}`;
+  download("antologia-poesia.html",doc,"text/html");toast("Antologia baixada.");
+}
+function currentListAll(){const s=$("#sortBy").value;return [...poems].sort((a,b)=>{
+  const [k,dir]=s.split("-");let av=a[k]||"",bv=b[k]||"";if(k==="impression"){av=+av;bv=+bv;}
+  return (av<bv?-1:av>bv?1:0)*(dir==="asc"?1:-1);});}
+
+/* ---------- overlay ---------- */
+function openOverlay(){$("#overlay").classList.add("open");document.body.style.overflow="hidden";}
+function closeOverlay(){$("#overlay").classList.remove("open");document.body.style.overflow="";}
+$("#overlay").addEventListener("click",e=>{if(e.target.id==="overlay")closeOverlay();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeOverlay();});
+
+/* ---------- wire up ---------- */
+$("#btnNew").onclick=()=>openForm();
+$("#btnImport").onclick=openImport;
+$("#btnExport").onclick=openExport;
+$("#btnIndex").onclick=()=>$("#indexPanel").classList.toggle("open");
+$("#q").addEventListener("input",render);
+$("#filterMov").addEventListener("change",render);
+$("#sortBy").addEventListener("change",render);
+window.openForm=openForm;window.openDetail=openDetail;window.del=del;window.saveForm=saveForm;
+window.pickImp=pickImp;window.toggleAct=toggleAct;window.doImport=doImport;window.exportJSON=exportJSON;
+window.exportHTML=exportHTML;window.copyJSON=copyJSON;window.closeOverlay=closeOverlay;
+window.filterByMov=filterByMov;window.searchFor=searchFor;
+
+load();
+</script>
