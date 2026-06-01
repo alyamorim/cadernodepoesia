@@ -1,6 +1,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Caderno de Poesia</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Spectral+SC:wght@400;500&display=swap" rel="stylesheet">
@@ -190,6 +192,18 @@
     color:var(--paper);padding:11px 22px;border-radius:3px;font-size:14px;opacity:0;transition:.3s;z-index:99;
     box-shadow:0 10px 30px -8px rgba(0,0,0,.4)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* drive status */
+  .drive{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-faint)}
+  .drive .dot{width:8px;height:8px;border-radius:50%;background:var(--line);display:inline-block;flex:none;transition:.3s}
+  .drive.ok .dot{background:#5a8a4a}
+  .drive.busy .dot{background:var(--gold);animation:pulse 1s infinite}
+  .drive.err .dot{background:var(--oxblood)}
+  .drive.off .dot{background:var(--line)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .drive button{background:none;border:none;color:var(--oxblood);cursor:pointer;font-family:"Spectral",serif;
+    font-size:13px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line);padding:0}
+  .drive button:hover{color:#67271c}
 </style>
 
 <div class="wrap">
@@ -222,6 +236,11 @@
     <button class="link" id="btnIndex">&#9671; ver &iacute;ndice do percurso</button>
     <button class="link" id="btnImport">importar</button>
     <button class="link" id="btnExport">exportar</button>
+    <span class="drive off" id="drive">
+      <span class="dot"></span>
+      <span id="driveTxt">Drive desconectado</span>
+      <button id="driveBtn" onclick="driveLogin()" style="display:none">entrar com Google</button>
+    </span>
   </div>
 
   <div class="index-panel" id="indexPanel">
@@ -258,7 +277,8 @@ function load(){
 }
 function save(){
   try{ localStorage.setItem(KEY,JSON.stringify(poems)); }
-  catch(e){ toast("N\u00e3o consegui salvar \u2014 exporte um backup."); }
+  catch(e){ toast("N\u00e3o consegui salvar localmente \u2014 exporte um backup."); }
+  driveSchedule();
 }
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
@@ -531,6 +551,131 @@ window.openForm=openForm;window.openDetail=openDetail;window.del=del;window.save
 window.pickImp=pickImp;window.toggleAct=toggleAct;window.doImport=doImport;window.exportJSON=exportJSON;
 window.exportHTML=exportHTML;window.copyJSON=copyJSON;window.closeOverlay=closeOverlay;
 window.filterByMov=filterByMov;window.searchFor=searchFor;
+
+/* ========== Sincroniza\u00e7\u00e3o com Google Drive ========== */
+/* Mesmo projeto OAuth do controle financeiro. Os dados v\u00e3o para a
+   appDataFolder (pasta privada do app, invis\u00edvel no Drive do usu\u00e1rio),
+   no arquivo caderno-poesia-dados.json. */
+const CLIENT_ID="677651936598-n5ets1kq4qr95qbfgi62vqvcu8m5g49g.apps.googleusercontent.com";
+const SCOPE="https://www.googleapis.com/auth/drive.appdata";
+const FILE_NAME="caderno-poesia-dados.json";
+const TOKEN_KEY="caderno-drive-token";
+
+let tokenClient=null, gapiReady=false, driveFileId=null, saveTimer=null, accessToken=null;
+
+function driveSetStatus(state,txt,showBtn){
+  const el=$("#drive");el.className="drive "+state;
+  $("#driveTxt").textContent=txt;
+  $("#driveBtn").style.display=showBtn?"inline":"none";
+}
+function gapiInit(){
+  gapi.load("client",async()=>{
+    await gapi.client.init({discoveryDocs:["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]});
+    gapiReady=true;
+    // token em cache desta m\u00e1quina?
+    const cached=localStorage.getItem(TOKEN_KEY);
+    if(cached){
+      try{const t=JSON.parse(cached);
+        if(t.access_token && t.expires_at>Date.now()+60000){
+          accessToken=t.access_token;gapi.client.setToken({access_token:accessToken});
+          driveSetStatus("busy","Sincronizando\u2026",false);driveSync();return;
+        }}catch(e){}
+    }
+    driveSetStatus("off","Drive desconectado",true);
+  });
+}
+function gsiInit(){
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,scope:SCOPE,
+    callback:(resp)=>{
+      if(resp.error){driveSetStatus("err","Falha no login",true);return;}
+      accessToken=resp.access_token;
+      gapi.client.setToken({access_token:accessToken});
+      localStorage.setItem(TOKEN_KEY,JSON.stringify({
+        access_token:accessToken, expires_at:Date.now()+(resp.expires_in||3600)*1000}));
+      driveSetStatus("busy","Sincronizando\u2026",false);driveSync();
+    }
+  });
+}
+function driveLogin(){
+  if(!tokenClient){toast("Google ainda carregando\u2014tente em instantes.");return;}
+  tokenClient.requestAccessToken({prompt: accessToken?"":"consent"});
+}
+async function findFile(){
+  const r=await gapi.client.drive.files.list({
+    spaces:"appDataFolder",fields:"files(id,modifiedTime)",q:`name='${FILE_NAME}'`});
+  return (r.result.files&&r.result.files[0])||null;
+}
+/* Reconcilia\u00e7\u00e3o na conex\u00e3o: a vers\u00e3o mais recente (local x Drive) vence. */
+async function driveSync(){
+  try{
+    const f=await findFile();
+    if(f){
+      driveFileId=f.id;
+      const remoteTime=new Date(f.modifiedTime).getTime();
+      const localTime=+(localStorage.getItem(KEY+":mtime")||0);
+      const res=await gapi.client.drive.files.get({fileId:f.id,alt:"media"});
+      let remote=[];try{remote=typeof res.result==="string"?JSON.parse(res.result):res.result;}catch(e){remote=[];}
+      if(remoteTime>=localTime || poems.length===0){
+        poems=Array.isArray(remote)?remote:[];
+        localStorage.setItem(KEY,JSON.stringify(poems));
+        render();
+        driveSetStatus("ok","Drive conectado",false);
+      }else{
+        await driveUpload();
+        driveSetStatus("ok","Drive conectado",false);
+      }
+    }else{
+      await driveUpload(); // primeiro envio
+      driveSetStatus("ok","Drive conectado",false);
+    }
+  }catch(e){
+    console.error(e);
+    if(e&&e.status===401){localStorage.removeItem(TOKEN_KEY);driveSetStatus("off","Sess\u00e3o expirou \u2014 reconecte",true);}
+    else driveSetStatus("err","Erro de sincroniza\u00e7\u00e3o",true);
+  }
+}
+async function driveUpload(){
+  const body=JSON.stringify(poems);
+  const meta={name:FILE_NAME,mimeType:"application/json"};
+  if(!driveFileId)meta.parents=["appDataFolder"];
+  const boundary="-------caderno"+Date.now();
+  const multipart=
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`+
+    JSON.stringify(meta)+
+    `\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n`+
+    body+`\r\n--${boundary}--`;
+  const path=driveFileId
+    ?`/upload/drive/v3/files/${driveFileId}?uploadType=multipart`
+    :`/upload/drive/v3/files?uploadType=multipart`;
+  const r=await gapi.client.request({
+    path,method:driveFileId?"PATCH":"POST",
+    headers:{"Content-Type":`multipart/related; boundary=${boundary}`},
+    body:multipart});
+  if(r.result&&r.result.id)driveFileId=r.result.id;
+  localStorage.setItem(KEY+":mtime",Date.now().toString());
+}
+/* grava\u00e7\u00e3o com debounce, disparada por save() */
+function driveSchedule(){
+  localStorage.setItem(KEY+":mtime",Date.now().toString());
+  if(!accessToken||!gapiReady)return;
+  if(saveTimer)clearTimeout(saveTimer);
+  driveSetStatus("busy","Salvando\u2026",false);
+  saveTimer=setTimeout(async()=>{
+    try{await driveUpload();driveSetStatus("ok","Drive conectado",false);}
+    catch(e){console.error(e);driveSetStatus("err","Erro ao salvar no Drive",true);}
+  },1200);
+}
+window.driveLogin=driveLogin;
+
+/* inicializar Google APIs ap\u00f3s carregamento dos scripts */
+function bootGoogle(){
+  if(typeof gapi!=="undefined")gapiInit();
+  else{const s=document.querySelector('script[src*="api.js"]');if(s)s.addEventListener("load",gapiInit);}
+  if(typeof google!=="undefined"&&google.accounts)gsiInit();
+  else{const s=document.querySelector('script[src*="gsi/client"]');if(s)s.addEventListener("load",gsiInit);}
+}
+window.addEventListener("load",bootGoogle);
 
 load();
 </script>
