@@ -248,16 +248,16 @@ const KEY="caderno-poemas:v1";
 const ACTIONS=["pesquisei","decorei","gravei","ouvi","comparei tradu\u00e7\u00f5es","li o par"];
 let poems=[];
 
-/* ---------- persistence ---------- */
-async function load(){
+/* ---------- persistence (localStorage) ---------- */
+function load(){
   try{
-    const r=await window.storage.get(KEY,false);
-    poems = r&&r.value ? JSON.parse(r.value) : [];
+    const raw=localStorage.getItem(KEY);
+    poems = raw ? JSON.parse(raw) : [];
   }catch(e){ poems=[]; }
   render();
 }
-async function save(){
-  try{ await window.storage.set(KEY,JSON.stringify(poems),false); }
+function save(){
+  try{ localStorage.setItem(KEY,JSON.stringify(poems)); }
   catch(e){ toast("N\u00e3o consegui salvar \u2014 exporte um backup."); }
 }
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
