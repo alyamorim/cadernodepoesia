@@ -20,6 +20,13 @@
     --line:#d8cdb6;
     --line-soft:#e4dac6;
     --shadow:rgba(60,46,28,.16);
+    /* segunda voz: reflexões / textos de poética (a glosa marginal) */
+    --card-reflexao:#e7eae8;
+    --paper-reflexao:#e9edec;
+    --reflexao:#3f4a63;
+    --reflexao-soft:#5c6a86;
+    --line-reflexao:#cbd4d1;
+    --line-reflexao-soft:#d8e0dd;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -204,6 +211,41 @@
   .drive button{background:none;border:none;color:var(--oxblood);cursor:pointer;font-family:"Spectral",serif;
     font-size:13px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line);padding:0}
   .drive button:hover{color:#67271c}
+
+  /* ---------- reflexão: textos de poética (a segunda voz do caderno) ---------- */
+  .btn-reflexao{background:var(--reflexao);border-color:var(--reflexao);color:#eef1f0}
+  .btn-reflexao:hover{background:#313a50;border-color:#313a50;color:#fff}
+
+  /* cartão de reflexão */
+  .poem-card.reflexao{background:var(--card-reflexao);border-color:var(--line-reflexao)}
+  .poem-card.reflexao:hover{border-color:var(--reflexao-soft);
+    box-shadow:0 8px 22px -10px rgba(40,50,78,.28)}
+  .poem-card.reflexao .pc-author{color:var(--reflexao)}
+  .poem-card.reflexao .impression{color:var(--reflexao-soft)}
+  .poem-card.reflexao .pc-foot{border-top-color:var(--line-reflexao-soft)}
+  .poem-card.reflexao .tag{background:#dde3e1;border-color:var(--line-reflexao);color:var(--reflexao-soft)}
+  .pc-kind{font-family:"Spectral SC","Spectral",serif;letter-spacing:.2em;text-transform:uppercase;
+    font-size:10px;color:var(--reflexao);margin-bottom:9px;display:flex;align-items:center;gap:7px}
+  .pc-kind::before{content:"";width:13px;height:1px;background:var(--reflexao);opacity:.55}
+
+  /* modal em modo reflexão */
+  .modal.reflexao{background:var(--paper-reflexao);border-color:var(--line-reflexao)}
+  .modal.reflexao .d-kicker,
+  .modal.reflexao .d-author,
+  .modal.reflexao .d-section h5,
+  .modal.reflexao .form-title,
+  .modal.reflexao .field label,
+  .modal.reflexao .close:hover{color:var(--reflexao)}
+  .modal.reflexao .d-text{border-left-color:var(--reflexao)}
+  .modal.reflexao .field input:focus,
+  .modal.reflexao .field textarea:focus,
+  .modal.reflexao .field select:focus{border-color:var(--reflexao-soft)}
+  .modal.reflexao .btn-primary{background:var(--reflexao);border-color:var(--reflexao);color:#eef1f0}
+  .modal.reflexao .btn-primary:hover{background:#313a50;border-color:#313a50}
+  .modal.reflexao .imp-pick button.on{background:var(--reflexao-soft);border-color:var(--reflexao-soft)}
+  .modal.reflexao .act-pick button.on{background:#dde3e1;border-color:var(--reflexao-soft);color:var(--reflexao)}
+  /* o texto de uma reflexão é prosa: alinhamento à esquerda, sem ar de verso */
+  .d-text.reflexao{font-size:16.5px;line-height:1.68;font-weight:400}
 </style>
 
 <div class="wrap">
@@ -219,6 +261,11 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       <input id="q" type="text" placeholder="Buscar por verso, autor, tema&hellip;">
     </div>
+    <select id="filterKind">
+      <option value="">Poemas e reflex&otilde;es</option>
+      <option value="poem">Somente poemas</option>
+      <option value="reflexao">Somente reflex&otilde;es</option>
+    </select>
     <select id="filterMov"><option value="">Todos os movimentos</option></select>
     <select id="sortBy">
       <option value="dateRead-desc">Lidos por &uacute;ltimo</option>
@@ -229,10 +276,11 @@
       <option value="impression-desc">Maior impress&atilde;o</option>
     </select>
     <button class="btn btn-primary" id="btnNew">+ Novo poema</button>
+    <button class="btn btn-reflexao" id="btnNewText">+ Novo texto</button>
   </div>
 
   <div class="meta-row">
-    <span><b id="count">0</b> poemas no caderno</span>
+    <span id="tally"><b>0</b> poemas no caderno</span>
     <button class="link" id="btnIndex">&#9671; ver &iacute;ndice do percurso</button>
     <button class="link" id="btnImport">importar</button>
     <button class="link" id="btnExport">exportar</button>
@@ -265,6 +313,7 @@
 <script>
 const KEY="caderno-poemas:v1";
 const ACTIONS=["pesquisei","decorei","gravei","ouvi","comparei tradu\u00e7\u00f5es","li o par"];
+const REFLEXAO_ACTIONS=["pesquisei","reli","citei","conectei a poemas","desdobrei"];
 let poems=[];
 
 /* ---------- persistence (localStorage) ---------- */
@@ -293,7 +342,10 @@ function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");se
 function currentList(){
   const q=$("#q").value.trim().toLowerCase();
   const mov=$("#filterMov").value;
+  const kind=$("#filterKind").value;
   let list=poems.filter(p=>{
+    const pk=p.kind==="reflexao"?"reflexao":"poem";
+    if(kind && pk!==kind)return false;
     if(mov && p.movement!==mov)return false;
     if(!q)return true;
     return [p.title,p.author,p.text,p.commentary,p.movement,p.filiations,(p.tags||[]).join(" ")]
@@ -310,7 +362,11 @@ function currentList(){
   return list;
 }
 function render(){
-  $("#count").textContent=poems.length;
+  const poemCount=poems.filter(p=>p.kind!=="reflexao").length;
+  const reflCount=poems.filter(p=>p.kind==="reflexao").length;
+  $("#tally").innerHTML = reflCount
+    ? `<b>${poemCount}</b> poema${poemCount===1?"":"s"} &middot; <b>${reflCount}</b> reflex${reflCount===1?"&atilde;o":"&otilde;es"}`
+    : `<b>${poemCount}</b> poema${poemCount===1?"":"s"} no caderno`;
   // movements filter + index
   const movs={},auths={};
   poems.forEach(p=>{if(p.movement)movs[p.movement]=(movs[p.movement]||0)+1;
@@ -331,9 +387,11 @@ function render(){
   }
   if(list.length===0){host.innerHTML=`<div class="empty-state"><p>Nenhum poema corresponde &agrave; busca.</p></div>`;return;}
   host.innerHTML='<div class="grid">'+list.map(p=>{
-    const snip=(p.text||"").split("\n").slice(0,5).join("\n");
-    return `<div class="poem-card" onclick="openDetail('${p.id}')">
+    const isR=p.kind==="reflexao";
+    const snip=(p.text||"").split("\n").slice(0,isR?6:5).join("\n");
+    return `<div class="poem-card${isR?" reflexao":""}" onclick="openDetail('${p.id}')">
       <div class="impression" title="${(+p.impression||0)} de 3">${impMarks(p.impression)}</div>
+      ${isR?'<div class="pc-kind">Reflex&atilde;o</div>':''}
       <div class="pc-title">${esc(p.title)||"<em>sem t&iacute;tulo</em>"}</div>
       <div class="pc-author">${esc(p.author)||"an&ocirc;nimo"}${p.year?` <span class="yr">&middot; ${esc(p.year)}</span>`:""}</div>
       <div class="pc-snippet">${esc(snip)}</div>
@@ -359,19 +417,20 @@ function searchFor(t){$("#q").value=t;render();$("#indexPanel").classList.remove
 /* ---------- detail ---------- */
 function openDetail(id){
   const p=poems.find(x=>x.id===id);if(!p)return;
-  const sec=(label,val,cls="")=>val?`<div class="d-section"><h5>${label}</h5><p class="${cls}">${esc(val)}</p></div>`:"";
+  const isR=p.kind==="reflexao";
   const acts=(p.actions||[]).length?`<div class="d-section"><h5>A&ccedil;&otilde;es tomadas</h5>
     <div class="chips">${p.actions.map(a=>`<span class="chip act">${esc(a)}</span>`).join("")}</div></div>`:"";
   const tags=(p.tags||[]).length?`<div class="d-section"><h5>Tags</h5>
     <div class="chips">${p.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div></div>`:"";
   const line=[p.year,p.movement,p.origLang&&`do ${esc(p.origLang)}`,p.translator&&`trad. ${esc(p.translator)}`,
-    p.dateRead&&`lido em ${fmtDate(p.dateRead)}`].filter(Boolean).join("  &middot;  ");
+    p.dateRead&&`${isR?"registrado":"lido"} em ${fmtDate(p.dateRead)}`].filter(Boolean).join("  &middot;  ");
+  $("#modal").className="modal"+(isR?" reflexao":"");
   $("#modal").innerHTML=`<button class="close" onclick="closeOverlay()">&times;</button>
-    <div class="d-kicker">${impMarks(p.impression)}</div>
+    <div class="d-kicker">${isR?'Texto de po&eacute;tica &nbsp;&middot;&nbsp; ':''}${impMarks(p.impression)}</div>
     <div class="d-title">${esc(p.title)||"sem t&iacute;tulo"}</div>
     <div class="d-author">${esc(p.author)||"an&ocirc;nimo"}</div>
     <div class="d-line">${line}</div>
-    <div class="d-text">${esc(p.text)}</div>
+    <div class="d-text${isR?" reflexao":""}">${esc(p.text)}</div>
     ${p.original?`<div class="d-section"><h5>Original</h5><div class="d-orig">${esc(p.original)}</div></div>`:""}
     ${p.commentary?`<div class="d-section"><h5>Coment&aacute;rio</h5><p class="commentary">${esc(p.commentary)}</p></div>`:""}
     ${p.filiations?`<div class="d-section"><h5>Filia&ccedil;&otilde;es &mdash; de quem herda, com quem dialoga</h5><p>${esc(p.filiations)}</p></div>`:""}
@@ -383,36 +442,56 @@ function openDetail(id){
   openOverlay();
 }
 function del(id){
-  if(!confirm("Remover este poema do caderno?"))return;
-  poems=poems.filter(x=>x.id!==id);save();render();closeOverlay();toast("Poema removido.");
+  const p=poems.find(x=>x.id===id);const isR=p&&p.kind==="reflexao";
+  if(!confirm(`Remover est${isR?"a reflex\u00e3o":"e poema"} do caderno?`))return;
+  poems=poems.filter(x=>x.id!==id);save();render();closeOverlay();toast(isR?"Reflex\u00e3o removida.":"Poema removido.");
 }
 
 /* ---------- form ---------- */
 let formActs=[],formImp=0;
-function openForm(id){
+function openForm(id,kindArg){
   const p=id?poems.find(x=>x.id===id):{};
+  const kind=id?(p.kind==="reflexao"?"reflexao":"poem"):(kindArg==="reflexao"?"reflexao":"poem");
+  const isR=kind==="reflexao";
+  const actList=isR?REFLEXAO_ACTIONS:ACTIONS;
   formActs=[...(p.actions||[])];formImp=+p.impression||0;
+  const title=id?(isR?"Editar reflex&atilde;o":"Editar poema"):(isR?"Novo texto de po&eacute;tica":"Novo poema");
+  const sub=id?"Ajuste o registro do caderno."
+    :(isR?"Uma leitura, uma nota, um ensaio sobre a poesia."
+         :"O que este poema deixou em voc&ecirc;.");
+  // seção de classificação: poema mostra língua/tradutor; reflexão mostra só o campo do campo/corrente
+  const classSection = isR
+    ? `<div class="field"><label>Corrente / campo</label>
+         <input id="f_movement" value="${esc(p.movement)}" placeholder="ex.: Formalismo Russo"></div>
+       <div style="display:none">
+         <input id="f_origLang" value="${esc(p.origLang)}">
+         <input id="f_translator" value="${esc(p.translator)}">
+         <div id="origWrap"><textarea id="f_original">${esc(p.original)}</textarea></div>
+       </div>`
+    : `<div class="row3">
+         <div class="field"><label>Movimento / estilo</label><input id="f_movement" value="${esc(p.movement)}" placeholder="ex.: Modernismo"></div>
+         <div class="field"><label>L&iacute;ngua original</label><input id="f_origLang" value="${esc(p.origLang)}" placeholder="vazio se PT"></div>
+         <div class="field"><label>Tradutor</label><input id="f_translator" value="${esc(p.translator)}"></div>
+       </div>
+       <div class="field" id="origWrap" style="${p.origLang||p.original?'':'display:none'}">
+         <label>Texto original (opcional)</label>
+         <textarea id="f_original" rows="4" placeholder="O poema na l&iacute;ngua de origem, ao lado da tradu&ccedil;&atilde;o&hellip;">${esc(p.original)}</textarea>
+       </div>`;
+  $("#modal").className="modal"+(isR?" reflexao":"");
   $("#modal").innerHTML=`<button class="close" onclick="closeOverlay()">&times;</button>
-    <div class="form-title">${id?"Editar poema":"Novo poema"}</div>
-    <div class="form-sub">${id?"Ajuste o registro do caderno.":"O que este poema deixou em voc&ecirc;."}</div>
+    <div class="form-title">${title}</div>
+    <div class="form-sub">${sub}</div>
     <input type="hidden" id="f_id" value="${id||""}">
+    <input type="hidden" id="f_kind" value="${kind}">
     <div class="field"><label>T&iacute;tulo</label><input id="f_title" value="${esc(p.title)}"></div>
     <div class="row2">
-      <div class="field"><label>Autor</label><input id="f_author" value="${esc(p.author)}"></div>
-      <div class="field"><label>Ano / d&eacute;cada do poema</label><input id="f_year" value="${esc(p.year)}" placeholder="ex.: 1945"></div>
+      <div class="field"><label>${isR?"Autor / refer&ecirc;ncia":"Autor"}</label><input id="f_author" value="${esc(p.author)}" placeholder="${isR?'ex.: Viktor Chkl&oacute;vski, ou \u201Ca partir de&hellip;\u201D':''}"></div>
+      <div class="field"><label>${isR?"Ano / refer&ecirc;ncia":"Ano / d&eacute;cada do poema"}</label><input id="f_year" value="${esc(p.year)}" placeholder="ex.: ${isR?'1917':'1945'}"></div>
     </div>
-    <div class="field"><label>Poema</label><textarea id="f_text" rows="8" placeholder="Cole o poema, preservando as quebras de verso&hellip;">${esc(p.text)}</textarea></div>
-    <div class="row3">
-      <div class="field"><label>Movimento / estilo</label><input id="f_movement" value="${esc(p.movement)}" placeholder="ex.: Modernismo"></div>
-      <div class="field"><label>L&iacute;ngua original</label><input id="f_origLang" value="${esc(p.origLang)}" placeholder="vazio se PT"></div>
-      <div class="field"><label>Tradutor</label><input id="f_translator" value="${esc(p.translator)}"></div>
-    </div>
-    <div class="field" id="origWrap" style="${p.origLang||p.original?'':'display:none'}">
-      <label>Texto original (opcional)</label>
-      <textarea id="f_original" rows="4" placeholder="O poema na l&iacute;ngua de origem, ao lado da tradu&ccedil;&atilde;o&hellip;">${esc(p.original)}</textarea>
-    </div>
+    <div class="field"><label>${isR?"Texto":"Poema"}</label><textarea id="f_text" rows="${isR?12:8}" placeholder="${isR?'Cole ou escreva o texto sobre a po&eacute;tica&hellip;':'Cole o poema, preservando as quebras de verso&hellip;'}">${esc(p.text)}</textarea></div>
+    ${classSection}
     <div class="field"><label>Coment&aacute;rio (opcional)</label>
-      <textarea id="f_commentary" rows="3" placeholder="O que voc&ecirc; pensou, sentiu, percebeu&hellip;">${esc(p.commentary)}</textarea></div>
+      <textarea id="f_commentary" rows="3" placeholder="${isR?'Uma d&uacute;vida, um elo, o que ficou&hellip;':'O que voc&ecirc; pensou, sentiu, percebeu&hellip;'}">${esc(p.commentary)}</textarea></div>
     <div class="field"><label>Filia&ccedil;&otilde;es &mdash; a genealogia</label>
       <input id="f_filiations" value="${esc(p.filiations)}" placeholder="de quem herda &middot; com quem dialoga &middot; quem o cita">
       <div class="hint">&Eacute; daqui que a hist&oacute;ria liter&aacute;ria vai se desenhando.</div></div>
@@ -421,11 +500,11 @@ function openForm(id){
         <div class="imp-pick" id="impPick">
           ${[1,2,3].map(n=>`<button type="button" data-n="${n}" onclick="pickImp(${n})">${impMarks(n)}</button>`).join("")}
         </div></div>
-      <div class="field"><label>Lido em</label><input id="f_dateRead" type="date" value="${esc(p.dateRead)||new Date().toISOString().slice(0,10)}"></div>
+      <div class="field"><label>${isR?"Registrado em":"Lido em"}</label><input id="f_dateRead" type="date" value="${esc(p.dateRead)||new Date().toISOString().slice(0,10)}"></div>
     </div>
     <div class="field"><label>A&ccedil;&otilde;es tomadas</label>
       <div class="act-pick" id="actPick">
-        ${ACTIONS.map(a=>`<button type="button" data-a="${a}" onclick="toggleAct('${a}')">${a}</button>`).join("")}
+        ${actList.map(a=>`<button type="button" data-a="${a}" onclick="toggleAct('${a}')">${a}</button>`).join("")}
       </div></div>
     <div class="field"><label>Tags (separadas por v&iacute;rgula)</label>
       <input id="f_tags" value="${esc((p.tags||[]).join(", "))}" placeholder="tema, forma, motivo&hellip;"></div>
@@ -433,8 +512,9 @@ function openForm(id){
       <button class="btn btn-ghost" onclick="closeOverlay()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveForm()">${id?"Salvar altera&ccedil;&otilde;es":"Guardar no caderno"}</button>
     </div>`;
-  // toggle original textarea on origLang input
-  $("#f_origLang").addEventListener("input",e=>{$("#origWrap").style.display=e.target.value?"block":($("#f_original").value?"block":"none");});
+  // toggle original textarea on origLang input (só relevante para poemas)
+  const ol=$("#f_origLang");
+  if(ol&&!isR)ol.addEventListener("input",e=>{$("#origWrap").style.display=e.target.value?"block":($("#f_original").value?"block":"none");});
   syncImp();syncActs();
   openOverlay();
 }
@@ -448,6 +528,7 @@ function saveForm(){
   const id=$("#f_id").value;
   const rec={
     id:id||uid(),
+    kind:($("#f_kind").value==="reflexao"?"reflexao":"poem"),
     title:val("f_title"),author:val("f_author"),year:val("f_year"),
     text:$("#f_text").value.replace(/\s+$/,""),original:$("#f_original").value.replace(/\s+$/,""),
     movement:val("f_movement"),origLang:val("f_origLang"),translator:val("f_translator"),
@@ -461,10 +542,12 @@ function saveForm(){
 
 /* ---------- import / export ---------- */
 function openImport(){
+  $("#modal").className="modal";
   $("#modal").innerHTML=`<button class="close" onclick="closeOverlay()">&times;</button>
     <div class="form-title">Importar</div>
-    <div class="io-note">Cole o registro em JSON gerado no seu percurso (um poema, ou uma lista deles).
-      Os poemas s&atilde;o adicionados ao caderno; backups exportados restauram tudo.</div>
+    <div class="io-note">Cole o registro em JSON gerado no seu percurso &mdash; um poema, uma reflex&atilde;o, ou uma lista deles.
+      Registros com <code>"kind":"reflexao"</code> entram como textos de po&eacute;tica; os demais, como poemas.
+      Tudo &eacute; adicionado ao caderno; backups exportados restauram o conjunto.</div>
     <textarea class="io-text" id="ioIn" placeholder='{ "title": "...", "author": "...", "text": "..." }'></textarea>
     <div class="io-status" id="ioStatus"></div>
     <div class="form-foot">
@@ -481,7 +564,8 @@ function doImport(){
   arr.forEach(d=>{
     if(!d||(typeof d!=="object"))return;
     poems.unshift({
-      id:d.id||uid(),title:d.title||"",author:d.author||"",year:d.year||"",
+      id:d.id||uid(),kind:(d.kind==="reflexao"?"reflexao":"poem"),
+      title:d.title||"",author:d.author||"",year:d.year||"",
       text:d.text||"",original:d.original||"",movement:d.movement||"",
       origLang:d.origLang||"",translator:d.translator||"",commentary:d.commentary||"",
       filiations:d.filiations||"",impression:+d.impression||0,
@@ -489,9 +573,10 @@ function doImport(){
       actions:Array.isArray(d.actions)?d.actions:[],tags:Array.isArray(d.tags)?d.tags:[]
     });n++;
   });
-  save();render();closeOverlay();toast(n+(n===1?" poema importado.":" poemas importados."));
+  save();render();closeOverlay();toast(n+(n===1?" registro importado.":" registros importados."));
 }
 function openExport(){
+  $("#modal").className="modal";
   $("#modal").innerHTML=`<button class="close" onclick="closeOverlay()">&times;</button>
     <div class="form-title">Exportar</div>
     <div class="io-note">Leve seu caderno com voc&ecirc;. O <b>backup JSON</b> restaura tudo aqui depois;
@@ -510,23 +595,31 @@ function download(name,content,type){
 function exportJSON(){download("caderno-poesia-backup.json",JSON.stringify(poems,null,2),"application/json");toast("Backup baixado.");}
 function copyJSON(){navigator.clipboard.writeText(JSON.stringify(poems,null,2)).then(()=>toast("JSON copiado."));}
 function exportHTML(){
-  const items=currentListAll().map(p=>`
-    <article>
+  const items=currentListAll().map(p=>{
+    const isR=p.kind==="reflexao";
+    return `
+    <article class="${isR?"reflexao":""}">
       <div class="mk">${impMarks(p.impression)}</div>
+      ${isR?'<div class="kd">Reflex&atilde;o &middot; po&eacute;tica</div>':""}
       <h2>${esc(p.title)||"sem t\u00edtulo"}</h2>
       <div class="au">${esc(p.author)}${p.year?" &middot; "+esc(p.year):""}${p.movement?" &middot; "+esc(p.movement):""}</div>
-      <pre class="tx">${esc(p.text)}</pre>
+      <${isR?"div":"pre"} class="tx">${esc(p.text)}</${isR?"div":"pre"}>
       ${p.commentary?`<p class="cm">${esc(p.commentary)}</p>`:""}
       ${p.filiations?`<p class="fi"><em>Filia&ccedil;&otilde;es:</em> ${esc(p.filiations)}</p>`:""}
-    </article>`).join("");
+    </article>`;}).join("");
+  const nP=poems.filter(p=>p.kind!=="reflexao").length, nR=poems.filter(p=>p.kind==="reflexao").length;
+  const subline = nR?`${nP} poemas &middot; ${nR} reflex&otilde;es`:`os poemas que ficaram &mdash; ${poems.length} registros`;
   const doc=`<!doctype html><meta charset="utf-8"><title>Caderno de Poesia</title>
   <style>body{font-family:Georgia,serif;max-width:680px;margin:40px auto;padding:0 20px;color:#2a2620;background:#f4ecdd;line-height:1.6}
   h1{font-size:44px;text-align:center;font-weight:500}.sub{text-align:center;font-style:italic;color:#5c554a;margin-bottom:50px}
   article{margin:0 0 54px;padding-bottom:30px;border-bottom:1px solid #d8cdb6}.mk{color:#9a7b41;letter-spacing:2px}
   h2{font-size:30px;margin:6px 0 2px}.au{font-style:italic;color:#7c3326;margin-bottom:16px}
   .tx{font-family:Georgia,serif;font-size:18px;white-space:pre-wrap;border-left:2px solid #9a7b41;padding-left:20px;margin:0 0 18px}
-  .cm{font-style:italic;color:#5c554a}.fi{font-size:14px;color:#8a8170}</style>
-  <h1>Caderno de Poesia</h1><div class="sub">os poemas que ficaram &mdash; ${poems.length} registros</div>${items}`;
+  .cm{font-style:italic;color:#5c554a}.fi{font-size:14px;color:#8a8170}
+  article.reflexao{background:#eef1f0;border-left:3px solid #3f4a63;border-bottom-color:#cbd4d1;padding:22px 24px;border-radius:3px}
+  article.reflexao .au{color:#3f4a63}article.reflexao .tx{border-left-color:#3f4a63;font-size:16.5px}
+  .kd{font-family:Georgia,serif;font-variant:small-caps;letter-spacing:.14em;color:#3f4a63;font-size:13px;margin-bottom:2px}</style>
+  <h1>Caderno de Poesia</h1><div class="sub">${subline}</div>${items}`;
   download("antologia-poesia.html",doc,"text/html");toast("Antologia baixada.");
 }
 function currentListAll(){const s=$("#sortBy").value;return [...poems].sort((a,b)=>{
@@ -541,10 +634,12 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeOverlay();});
 
 /* ---------- wire up ---------- */
 $("#btnNew").onclick=()=>openForm();
+$("#btnNewText").onclick=()=>openForm(null,"reflexao");
 $("#btnImport").onclick=openImport;
 $("#btnExport").onclick=openExport;
 $("#btnIndex").onclick=()=>$("#indexPanel").classList.toggle("open");
 $("#q").addEventListener("input",render);
+$("#filterKind").addEventListener("change",render);
 $("#filterMov").addEventListener("change",render);
 $("#sortBy").addEventListener("change",render);
 window.openForm=openForm;window.openDetail=openDetail;window.del=del;window.saveForm=saveForm;
